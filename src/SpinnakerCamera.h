@@ -19,18 +19,23 @@ using namespace Spinnaker;
 using namespace Spinnaker::GenApi;
 using namespace Spinnaker::GenICam;
 
+
+class SpinnakerCamera;
+typedef std::shared_ptr<SpinnakerCamera> SpinnakerCameraRef;
+
 class SpinnakerCamera {
 public:
+
+	static SpinnakerCameraRef create(SystemPtr _system, int index, params::InterfaceGlRef _paramGUI);
+
 	SpinnakerCamera(SystemPtr system, int index, params::InterfaceGlRef paramGUI);
 	~SpinnakerCamera();
 
 	gl::TextureRef getLatestCameraTexture();
 	float getFps();
-
 	int getLatestDroppedFrames();
 	string getSerialNumber();
 	void cleanup();
-
 	void printInfo();
 
 private:

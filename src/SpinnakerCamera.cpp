@@ -18,7 +18,12 @@ using namespace Spinnaker::GenICam;
 
 // Whether to save the changed settings to the non-volatile memory of the camera. 
 // If true, always saves to User Set 1 and makes User Set 1 the default for initialization
-#define SAVE_TO_NON_VOLATILE_ON_CHANGE true 
+#define SAVE_TO_NON_VOLATILE_ON_CHANGE false 
+
+SpinnakerCameraRef SpinnakerCamera::create(SystemPtr _system, int index, params::InterfaceGlRef _paramGUI )
+{
+	return SpinnakerCameraRef( new SpinnakerCamera(_system, index,_paramGUI));
+}
 
 SpinnakerCamera::SpinnakerCamera(SystemPtr _system, int index, params::InterfaceGlRef _paramGUI) {
 	cameraIndex = index;
