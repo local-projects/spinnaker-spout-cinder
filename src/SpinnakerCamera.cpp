@@ -30,7 +30,9 @@ SpinnakerCamera::SpinnakerCamera(SystemPtr _system, int index, params::Interface
 	system = _system;
 	paramGUI = _paramGUI;
 
+	// attempting usage of openCV
 	frameBuffer = new ConcurrentCircularBuffer<gl::TextureRef>(5); // room for 5 frames
+	cvFrameBuffer = new ConcurrentCircularBuffer<cv::Mat>(5); // room for 5 frames
 
 	gl::ContextRef backgroundCtx = gl::Context::create(gl::context());
 	captureThread = shared_ptr<thread>(new thread(bind(&SpinnakerCamera::captureThreadFn, this, backgroundCtx)));
@@ -55,7 +57,6 @@ void SpinnakerCamera::captureThreadFn(gl::ContextRef context) {
 
 		try {
 			auto tex = getNextCameraTexture();
-
 			if (tex == NULL) {
 				droppedFrames++;
 			}
@@ -63,7 +64,6 @@ void SpinnakerCamera::captureThreadFn(gl::ContextRef context) {
 				// we need to wait on a fence before alerting the primary thread that the Texture is ready
 				auto fence = gl::Sync::create();
 				fence->clientWaitSync();
-
 				frameBuffer->pushFront(tex);
 			}
 		}
@@ -78,6 +78,14 @@ gl::TextureRef SpinnakerCamera::getLatestCameraTexture() {
 		frameBuffer->popBack(&latestTexture);
 	}
 	return latestTexture;
+}
+
+cv::Mat SpinnakerCamera::getLatestCameraMat()
+{
+	while (cvFrameBuffer->getSize() > 0) {
+		cvFrameBuffer->popBack(&mLatestMat);
+	}
+	return mLatestMat;
 }
 
 bool SpinnakerCamera::checkCameraUpdatedAndRunning() {
@@ -120,7 +128,9 @@ void SpinnakerCamera::save() {
 }
 
 gl::TextureRef SpinnakerCamera::getNextCameraTexture() {
-	bool success = SpinnakerDeviceCommunication::getCameraTexture(camera, cameraTexture); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
+
+	cv::Mat test;
+	bool success = SpinnakerDeviceCommunication::getCameraTexture(camera, cameraTexture, mLatestMat ); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
 
 	if (success == false || cameraTexture == NULL) {
 		return NULL;
