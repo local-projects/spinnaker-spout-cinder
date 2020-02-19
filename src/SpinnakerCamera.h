@@ -54,6 +54,7 @@ private:
 
 	CameraPtr camera = NULL;
 	gl::TextureRef cameraTexture = NULL;
+	cv::Mat cameraMatrix;
 
 	double lastDroppedFramesTime = 0;
 	atomic<int> droppedFrames = 0;
@@ -80,7 +81,7 @@ private:
 
 	shared_ptr<thread> captureThread;
 	ConcurrentCircularBuffer<gl::TextureRef> *frameBuffer;
-	ConcurrentCircularBuffer<cv::Mat>* cvFrameBuffer;
+	ConcurrentCircularBuffer<cv::Mat> *cvFrameBuffer;
 
 	void captureThreadFn(gl::ContextRef sharedGlContext);
 	bool shouldQuit = false;

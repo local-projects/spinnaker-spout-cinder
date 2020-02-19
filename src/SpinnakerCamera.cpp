@@ -65,6 +65,7 @@ void SpinnakerCamera::captureThreadFn(gl::ContextRef context) {
 				auto fence = gl::Sync::create();
 				fence->clientWaitSync();
 				frameBuffer->pushFront(tex);
+				cvFrameBuffer->pushFront(cameraMatrix.clone());
 			}
 		}
 		catch (ci::Exception &exc) {
@@ -129,8 +130,7 @@ void SpinnakerCamera::save() {
 
 gl::TextureRef SpinnakerCamera::getNextCameraTexture() {
 
-	cv::Mat test;
-	bool success = SpinnakerDeviceCommunication::getCameraTexture(camera, cameraTexture, mLatestMat ); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
+	bool success = SpinnakerDeviceCommunication::getCameraTexture(camera, cameraTexture, cameraMatrix); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
 
 	if (success == false || cameraTexture == NULL) {
 		return NULL;
