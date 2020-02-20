@@ -500,29 +500,13 @@ bool SpinnakerDeviceCommunication::checkStreamingStopped(CameraPtr camera) {
 	}
 }
 
-// create a cv matrix from captured image 
-cv::Mat SpinnakerDeviceCommunication::convertToCVmat(ImagePtr& pImage)
-{
-	int result = 0;
-	ImagePtr convertedImage = pImage->Convert(PixelFormat_BGR8, NEAREST_NEIGHBOR);
 
-	unsigned int XPadding = static_cast<unsigned int>(convertedImage->GetXPadding());
-	unsigned int YPadding = static_cast<unsigned int>(convertedImage->GetYPadding());
-	unsigned int rowsize = static_cast<unsigned int>(convertedImage->GetWidth());
-	unsigned int colsize = static_cast<unsigned int>(convertedImage->GetHeight());
-
-	//image data contains padding. When allocating Mat container size, you need to account for the X,Y image data padding. 
-	cv::Mat cvimg = cv::Mat(colsize + YPadding, rowsize + XPadding, CV_8UC3, convertedImage->GetData(), convertedImage->GetStride());
-	return cvimg.clone();
-}
-
-
-bool SpinnakerDeviceCommunication::getCameraTexture(CameraPtr camera, gl::TextureRef& outputTexture, cv::Mat& dst ) {
+bool SpinnakerDeviceCommunication::getCameraSurface(CameraPtr camera, ci::SurfaceRef& outputSurface) {
 	try {
 		ImagePtr capturedImage = camera->GetNextImage(1000); // Note: blocks until a new frame is available
 		if (capturedImage->IsIncomplete())
 		{
-			//Log() << "Image incomplete with image status " << capturedImage->GetImageStatus() << endl;
+			Log() << "Image incomplete with image status " << capturedImage->GetImageStatus() << endl;
 			capturedImage->Release();
 			return false;
 		}
@@ -534,19 +518,12 @@ bool SpinnakerDeviceCommunication::getCameraTexture(CameraPtr camera, gl::Textur
 			ImagePtr convertedImage = capturedImage->Convert(PixelFormat_RGB8, NEAREST_NEIGHBOR); // Note that color processing algorithms other than NEAREST_NEIGHBOR are probably too slow for continous acquisition at high resolutions.
 			capturedImage->Release();
 
-			if (outputTexture == NULL || outputTexture->getWidth() != w || outputTexture->getHeight() != h) {
-				outputTexture = gl::Texture2d::create(w, h);
+			if (outputSurface == NULL || outputSurface->getWidth() != w || outputSurface->getHeight() != h) {
+				outputSurface = Surface::create(w, h, false, ci::SurfaceChannelOrder::RGB);
 			}
 
-			outputTexture->update(convertedImage->GetData(), GL_RGB, GL_UNSIGNED_BYTE, 0, w, h);
-			dst = convertToCVmat(convertedImage);
-
-			/// testing resault image 
-			
-			auto fsResult = getAssetPath("") / fs::path("background_" +to_string( getElapsedFrames()) + ".png");
-			//ImageSourceRef img = fromOcv(dst);
-			//writeImage(fsResult, img);
-
+			auto mCamPixelData = convertedImage->GetData();
+			memcpy(outputSurface->getData(), mCamPixelData, w * h * 3);
 			return true;
 		}
 	}

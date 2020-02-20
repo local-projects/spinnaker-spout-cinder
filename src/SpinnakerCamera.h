@@ -35,8 +35,8 @@ public:
 	SpinnakerCamera(SystemPtr system, int index, params::InterfaceGlRef paramGUI);
 	~SpinnakerCamera();
 
-	gl::TextureRef getLatestCameraTexture();
-	cv::Mat getLatestCameraMat();
+	ci::SurfaceRef getLatestCameraSurface();
+	//cv::Mat getLatestCameraMat();
 
 	float getFps();
 	int getLatestDroppedFrames();
@@ -53,8 +53,9 @@ private:
 	params::InterfaceGlRef paramGUI;
 
 	CameraPtr camera = NULL;
-	gl::TextureRef cameraTexture = NULL;
-	cv::Mat cameraMatrix;
+	//gl::TextureRef cameraTexture = NULL;
+	ci::SurfaceRef cameraSurface = NULL;
+	//cv::Mat cameraMatrix;
 
 	double lastDroppedFramesTime = 0;
 	atomic<int> droppedFrames = 0;
@@ -80,18 +81,19 @@ private:
 	int prevCaptureHeight = 0;
 
 	shared_ptr<thread> captureThread;
-	ConcurrentCircularBuffer<gl::TextureRef> *frameBuffer;
-	ConcurrentCircularBuffer<cv::Mat> *cvFrameBuffer;
+	ConcurrentCircularBuffer<SurfaceRef> *frameBuffer;
+	//ConcurrentCircularBuffer<cv::Mat> *cvFrameBuffer;
 
 	void captureThreadFn(gl::ContextRef sharedGlContext);
 	bool shouldQuit = false;
 
-	gl::TextureRef latestTexture = NULL;
-	cv::Mat mLatestMat;
+	//gl::TextureRef latestTexture = NULL;
+	ci::SurfaceRef latestSurface = NULL;
+	//cv::Mat mLatestMat;
 
 
 	bool checkCameraUpdatedAndRunning();
-	gl::TextureRef getNextCameraTexture(); // also makes user camera is initialized. blocks during camera initialization and until next texture is received
+	ci::SurfaceRef getNextCameraSurface(); // also makes user camera is initialized. blocks during camera initialization and until next texture is received
 
 	void save();
 };

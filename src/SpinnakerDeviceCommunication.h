@@ -6,7 +6,6 @@
 
 #include "Spinnaker.h"
 #include "SpinGenApi/SpinnakerGenApi.h"
-#include "CinderOpenCV.h"
 
 
 using namespace ci;
@@ -43,12 +42,8 @@ public:
 	static bool checkStreamingStopped(CameraPtr camera);
 
 	//TODO - see if this helps framerate issues
-	static bool getCameraTexture(CameraPtr camera, gl::TextureRef& outputTexture, cv::Mat& dst);
+	static bool getCameraSurface(CameraPtr camera, ci::SurfaceRef& outputSurface);
 
 	static vector<string> getLogLevelStrings();
 	static SpinnakerLogLevel indexToLogLevel(int index);
-
-	// temp method to capture image to opencv
-	static cv::Mat convertToCVmat(ImagePtr& pImage);
-
 };

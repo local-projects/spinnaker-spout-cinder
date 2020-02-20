@@ -31,9 +31,7 @@ SpinnakerCamera::SpinnakerCamera(SystemPtr _system, int index, params::Interface
 	paramGUI = _paramGUI;
 
 	// attempting usage of openCV
-	frameBuffer = new ConcurrentCircularBuffer<gl::TextureRef>(5); // room for 5 frames
-	cvFrameBuffer = new ConcurrentCircularBuffer<cv::Mat>(5); // room for 5 frames
-
+	frameBuffer = new ConcurrentCircularBuffer<ci::SurfaceRef>(5); // room for 5 frames
 	gl::ContextRef backgroundCtx = gl::Context::create(gl::context());
 	captureThread = shared_ptr<thread>(new thread(bind(&SpinnakerCamera::captureThreadFn, this, backgroundCtx)));
 }
@@ -56,16 +54,19 @@ void SpinnakerCamera::captureThreadFn(gl::ContextRef context) {
 		}
 
 		try {
-			auto tex = getNextCameraTexture();
-			if (tex == NULL) {
+			auto surf = getNextCameraSurface();
+			if (surf == NULL) {
 				droppedFrames++;
 			}
 			else {
+				
+				//// TAMAR testing 
+				//cvFrameBuffer->pushFront(cameraMatrix.clone());
+				
 				// we need to wait on a fence before alerting the primary thread that the Texture is ready
 				auto fence = gl::Sync::create();
 				fence->clientWaitSync();
-				frameBuffer->pushFront(tex);
-				cvFrameBuffer->pushFront(cameraMatrix.clone());
+				frameBuffer->pushFront(surf);
 			}
 		}
 		catch (ci::Exception &exc) {
@@ -74,20 +75,28 @@ void SpinnakerCamera::captureThreadFn(gl::ContextRef context) {
 	}
 }
 
-gl::TextureRef SpinnakerCamera::getLatestCameraTexture() {
+ci::SurfaceRef SpinnakerCamera::getLatestCameraSurface() {
 	while (frameBuffer->getSize() > 0) {
-		frameBuffer->popBack(&latestTexture);
+		frameBuffer->popBack(&latestSurface);
 	}
-	return latestTexture;
+	return latestSurface;
 }
 
-cv::Mat SpinnakerCamera::getLatestCameraMat()
-{
-	while (cvFrameBuffer->getSize() > 0) {
-		cvFrameBuffer->popBack(&mLatestMat);
-	}
-	return mLatestMat;
-}
+//gl::TextureRef SpinnakerCamera::getLatestCameraTexture() {
+//	while (frameBuffer->getSize() > 0) {
+//		frameBuffer->popBack(&latestTexture);
+//	}
+//	return latestTexture;
+//}
+
+//cv::Mat SpinnakerCamera::getLatestCameraMat()
+//{
+//	//console() << "Getting next camera matrix" << endl;
+//	while (cvFrameBuffer->getSize() > 0) {
+//		cvFrameBuffer->popBack(&mLatestMat);
+//	}
+//	return mLatestMat;
+//}
 
 bool SpinnakerCamera::checkCameraUpdatedAndRunning() {
 	if (!checkCameraAssigned()) {
@@ -128,16 +137,16 @@ void SpinnakerCamera::save() {
 	camera->UserSetSave.Execute();
 }
 
-gl::TextureRef SpinnakerCamera::getNextCameraTexture() {
+ci::SurfaceRef SpinnakerCamera::getNextCameraSurface() {
 
-	bool success = SpinnakerDeviceCommunication::getCameraTexture(camera, cameraTexture, cameraMatrix); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
+	bool success = SpinnakerDeviceCommunication::getCameraSurface(camera, cameraSurface); // block until a new frame is available or a frame is reported incomplete. (re-)initializes output texture if needed
 
-	if (success == false || cameraTexture == NULL) {
+	if (success == false || cameraSurface == NULL) {
 		return NULL;
 	}
 	else {
-		int w = cameraTexture->getWidth();
-		int h = cameraTexture->getHeight();
+		int w = cameraSurface->getWidth();
+		int h = cameraSurface->getHeight();
 
 		if (prevCaptureWidth != w || prevCaptureHeight != h) {
 			Log() << "Camera " << camera->DeviceSerialNumber() << " now grabbing images at " << w << " x " << h;
@@ -155,7 +164,7 @@ gl::TextureRef SpinnakerCamera::getNextCameraTexture() {
 			fps = fps * 0.9f + 0.1f * thisFrameFps;
 			prevFrameTime = now;
 		}
-		return cameraTexture;
+		return cameraSurface;
 	}
 }
 
